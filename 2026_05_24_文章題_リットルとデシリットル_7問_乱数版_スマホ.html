@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d9488">
+    <title>文章題　リットルとデシリットル（9問・乱数）</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: #f0fdfa;
+            color: #1e293b;
+            margin: 0;
+            padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+        }
+        .top-bar {
+            position: sticky; top: 0; z-index: 20;
+            background: #0d9488; color: #fff;
+            padding: 12px 16px;
+            padding-top: calc(12px + env(safe-area-inset-top, 0px));
+            box-shadow: 0 2px 12px rgba(13, 148, 136, 0.35);
+        }
+        .top-bar h1 { font-size: 1rem; font-weight: 900; margin: 0 0 4px; }
+        .session-id { font-size: 0.7rem; opacity: 0.9; margin: 0; }
+        .content { padding: 12px; }
+        .hint-box {
+            background: #ccfbf1; border-radius: 12px; padding: 12px 14px;
+            font-size: 0.82rem; line-height: 1.6; margin-bottom: 14px; border: 1px solid #99f6e4;
+        }
+        .hint-box summary { font-weight: 900; color: #0f766e; cursor: pointer; list-style: none; }
+        .hint-box summary::-webkit-details-marker { display: none; }
+        .problem {
+            background: #fff; border-radius: 14px; padding: 16px 14px; margin-bottom: 14px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+        }
+        .problem-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .problem-badge {
+            background: #0d9488; color: #fff; font-size: 0.75rem; font-weight: 900;
+            padding: 4px 10px; border-radius: 20px; flex-shrink: 0;
+        }
+        .problem-title { font-size: 0.88rem; font-weight: 900; color: #0f766e; margin: 0; }
+        .problem-text { font-size: 1.05rem; line-height: 1.75; margin: 0 0 10px; }
+        .problem-text strong { color: #0d9488; }
+        .diagram-wrap {
+            background: #f8fafc; border-radius: 10px; padding: 8px 4px; margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .diagram-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 2px 0; }
+        .diagram-scroll svg { display: block; width: 100%; max-width: 100%; height: auto; max-height: 100px; }
+        .diagram-legend { font-size: 0.72rem; color: #64748b; text-align: center; margin: 6px 0 0; }
+        .diagram-caption {
+            font-size: 0.78rem; font-weight: 900; color: #475569;
+            margin: 10px 0 4px 6px;
+        }
+        .diagram-caption:first-child { margin-top: 0; }
+        .diagram-result-hint {
+            text-align: center; font-size: 0.88rem; font-weight: 900;
+            color: #0f766e; margin: 8px 0 2px;
+        }
+        .swipe-hint { font-size: 0.68rem; color: #94a3b8; text-align: center; margin: 4px 0 0; }
+        .box-path { fill: none; stroke: #0d9488; stroke-width: 2; stroke-linecap: round; }
+        .box-path.empty { stroke: #94a3b8; stroke-dasharray: 4 3; }
+        .box-path.hl { stroke: #d97706; stroke-width: 2.5; }
+        .dl-sq { fill: #5eead4; stroke: #0f766e; stroke-width: 0.7; }
+        .dl-sq.ghost { fill: #f1f5f9; stroke: #cbd5e1; }
+        .count-path { fill: none; stroke: #1e293b; stroke-width: 1.8; }
+        .numline { stroke: #1e293b; stroke-width: 1.8; fill: none; }
+        .group-label { font-size: 11px; font-weight: 700; fill: #475569; }
+        .answer-block { margin-top: 8px; }
+        .answer-block + .answer-block { margin-top: 12px; }
+        .answer-block label {
+            display: block; font-size: 0.88rem; font-weight: 700;
+            color: #475569; margin-bottom: 6px;
+        }
+        .answer-block input {
+            width: 100%; font-family: inherit; font-size: 16px;
+            padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 12px;
+        }
+        .parent-answer {
+            display: none; margin-top: 8px; padding: 10px 12px;
+            background: #f0fdf4; border-radius: 10px; font-size: 0.88rem;
+            color: #166534; font-weight: 700; line-height: 1.55;
+        }
+        .parent-answer .answer-value {
+            color: #0f766e; font-size: 0.95rem;
+        }
+        body.show-answers .parent-answer { display: block; }
+        .bottom-bar {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+            display: flex; gap: 8px; padding: 10px 12px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            background: #fff; border-top: 1px solid #e2e8f0;
+            box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.1);
+        }
+        .bottom-bar button {
+            flex: 1; font-family: inherit; font-size: 0.95rem; font-weight: 900;
+            padding: 16px 10px; border: none; border-radius: 12px; min-height: 52px;
+        }
+        #btnNew { background: #0d9488; color: #fff; }
+        #btnAnswers { background: #f8fafc; color: #475569; border: 2px solid #cbd5e1; }
+        #btnAnswers.showing { background: #fef3c7; border-color: #d97706; color: #b45309; }
+        .footer-link { text-align: center; font-size: 0.72rem; color: #94a3b8; padding: 8px; }
+        .footer-link a { color: #0d9488; }
+    </style>
+</head>
+<body>
+    <header class="top-bar">
+        <h1>文章題　リットルとデシリットル（9問）</h1>
+        <p class="session-id" id="sessionId">読み込み中…</p>
+    </header>
+
+    <div class="content">
+        <details class="hint-box">
+            <summary>▶ 図の見方（タップで開く）</summary>
+            <div>
+                <strong>大きい箱 1つ ＝ 1L</strong>。箱の中の<strong>正方形 1つ ＝ 1dL</strong>（1箱に10個まで）。<br>
+                箱の数の上には、上に凸の<strong>実線の弧</strong>でまとめて示します。<br>
+                <strong>問5だけ</strong>箱数直線モデル（数直線・座標0から）で、箱の数＝日数、箱の中に dL の数値を書きます。
+            </div>
+        </details>
+        <p class="diagram-legend" style="margin-bottom:12px;">■ 箱＝1L　■ 箱の中の正方形＝1dL（5行×2列・10個で1L）</p>
+        <div id="problemsRoot"></div>
+        <p class="footer-link"><a href="index.html">トップへ</a></p>
+    </div>
+
+    <nav class="bottom-bar">
+        <button type="button" id="btnNew">🔄 新しい問題</button>
+        <button type="button" id="btnAnswers">👁 答え</button>
+    </nav>
+
+    <script>
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function pick(arr) {
+            return arr[randInt(0, arr.length - 1)];
+        }
+
+        const BOX_W = 28;
+        const BOX_H = 30;
+        const BOX_GAP = 5;
+        const GROUP_GAP = 18;
+        const START_X = 10;
+        const BASE_Y = 56;
+        const ELL_W = 20;
+        const BOX_FLOAT = 6;
+
+        function dlToBoxes(dl) {
+            const boxes = [];
+            const full = Math.floor(dl / 10);
+            const rem = dl % 10;
+            for (let i = 0; i < full; i++) boxes.push(10);
+            if (rem > 0) boxes.push(rem);
+            return boxes.length ? boxes : [0];
+        }
+
+        function literToFullBoxes(L) {
+            const boxes = [];
+            for (let i = 0; i < L; i++) boxes.push(10);
+            return boxes;
+        }
+
+        function mixedToBoxes(L, dl) {
+            return literToFullBoxes(L).concat(dlToBoxes(dl));
+        }
+
+        function mixedLabel(L, dl) {
+            return dl > 0 ? `${L}L ${dl}dL` : `${L}L`;
+        }
+
+        function mixedAnswer(L, dl) {
+            return dl > 0 ? `${L}L${dl}dL` : `${L}L`;
+        }
+
+        /** innerHTML 用（3L5dL が &lt;L5dL&gt; と誤認識されないよう区切る） */
+        function mixedAnswerHtml(L, dl) {
+            if (dl <= 0) return `${L}L`;
+            return `${L}L\u200B${dl}dL`;
+        }
+
+        function needsDlCarry(dl1, dl2) {
+            return dl1 + dl2 >= 10;
+        }
+
+        function needsDlBorrow(dl1, dl2) {
+            return dl1 < dl2;
+        }
+
+        function addMixedPair(noCarry) {
+            let L1, dl1, L2, dl2;
+            do {
+                L1 = randInt(1, 3);
+                dl1 = randDl();
+                L2 = randInt(1, 2);
+                dl2 = randDl();
+            } while (noCarry ? needsDlCarry(dl1, dl2) : !needsDlCarry(dl1, dl2));
+            return { L1, dl1, L2, dl2, sum: addMixed(L1, dl1, L2, dl2) };
+        }
+
+        function subMixedPair(withBorrow) {
+            let L1, dl1, L2, dl2;
+            do {
+                L1 = randInt(2, 5);
+                dl1 = randDl();
+                L2 = randInt(1, L1);
+                dl2 = randDl();
+            } while (
+                mixedTotalUnits(L1, dl1) <= mixedTotalUnits(L2, dl2) ||
+                needsDlBorrow(dl1, dl2) !== withBorrow
+            );
+            return { L1, dl1, L2, dl2, left: subMixed(L1, dl1, L2, dl2) };
+        }
+
+        function explainAddCarry(L1, dl1, L2, dl2, sum) {
+            const rawDl = dl1 + dl2;
+            return `L：${L1}＋${L2}＝${L1 + L2}L。dL：${dl1}＋${dl2}＝${rawDl}dL → 10dL＝1Lに<strong>繰り上がり</strong>、${mixedAnswerHtml(sum.L, sum.dl)}`;
+        }
+
+        function explainSubBorrow(L1, dl1, L2, dl2, left) {
+            return `dL：${dl1}＜${dl2} なので、1Lから10dLの<strong>くり下がり</strong>（${dl1}＋10−${dl2}＝${left.dl}dL）。L：${L1}−1−${L2}＝${left.L}L → ${mixedAnswerHtml(left.L, left.dl)}`;
+        }
+
+        function mixedAddDiagram(L1, dl1, L2, dl2) {
+            return {
+                groups: [
+                    { boxes: mixedToBoxes(L1, dl1), groupLabel: mixedLabel(L1, dl1) },
+                    { boxes: mixedToBoxes(L2, dl2), groupLabel: mixedLabel(L2, dl2) }
+                ],
+                sumArcLabel: '?L?dL'
+            };
+        }
+
+        function mixedSubDiagram(L1, dl1, L2, dl2) {
+            return {
+                mode: 'dual_subtract',
+                L1, dl1, L2, dl2
+            };
+        }
+
+        function addMixed(L1, dl1, L2, dl2) {
+            let L = L1 + L2;
+            let dl = dl1 + dl2;
+            while (dl >= 10) {
+                L += 1;
+                dl -= 10;
+            }
+            return { L, dl };
+        }
+
+        function subMixed(L1, dl1, L2, dl2) {
+            let L = L1;
+            let dl = dl1;
+            if (dl < dl2) {
+                L -= 1;
+                dl += 10;
+            }
+            L -= L2;
+            dl -= dl2;
+            return { L, dl };
+        }
+
+        function mixedTotalUnits(L, dl) {
+            return L * 10 + dl;
+        }
+
+        /** 問6・7用：dL は 1〜9（10の倍数にしない） */
+        function randDl() {
+            return randInt(1, 9);
+        }
+
+        function drawDualSubtractDiagram(container, opt) {
+            const cap1 = document.createElement('p');
+            cap1.className = 'diagram-caption';
+            cap1.textContent = 'はじめの量';
+            container.appendChild(cap1);
+            drawBoxModel(container, {
+                groups: [{
+                    boxes: mixedToBoxes(opt.L1, opt.dl1),
+                    groupLabel: mixedLabel(opt.L1, opt.dl1)
+                }]
+            });
+
+            const cap2 = document.createElement('p');
+            cap2.className = 'diagram-caption';
+            cap2.textContent = '使った分';
+            container.appendChild(cap2);
+            drawBoxModel(container, {
+                groups: [{
+                    boxes: mixedToBoxes(opt.L2, opt.dl2),
+                    groupLabel: mixedLabel(opt.L2, opt.dl2)
+                }]
+            });
+
+            const hint = document.createElement('p');
+            hint.className = 'diagram-result-hint';
+            hint.textContent = 'のこり：?L?dL';
+            container.appendChild(hint);
+        }
+
+        function getDisplaySlots(n, forceFull) {
+            if (forceFull || n <= 4) {
+                const s = [];
+                for (let i = 0; i < n; i++) s.push({ type: 'box', idx: i });
+                return s;
+            }
+            return [
+                { type: 'box', idx: 0 },
+                { type: 'box', idx: 1 },
+                { type: 'ellipsis' },
+                { type: 'box', idx: n - 1 }
+            ];
+        }
+
+        /** 箱の中：5行×2列（下から上へ、左列→右列で1〜10） */
+        function appendDlSquares(parts, x, boxTop, filled, ghost) {
+            const pad = 3;
+            const cols = 2;
+            const rows = 5;
+            const innerW = BOX_W - pad * 2;
+            const sq = Math.min(5, Math.floor((innerW - (cols - 1)) / cols));
+            const gridW = cols * sq + (cols - 1);
+            const startX = x + (BOX_W - gridW) / 2;
+            const startY = boxTop + BOX_H - pad - rows * sq - (rows - 1);
+            let drawn = 0;
+            for (let c = 0; c < cols; c++) {
+                for (let r = rows - 1; r >= 0; r--) {
+                    if (drawn >= 10) break;
+                    const sx = startX + c * (sq + 1);
+                    const sy = startY + r * (sq + 1);
+                    const on = drawn < filled;
+                    const cls = on ? 'dl-sq' : (ghost ? 'dl-sq ghost' : '');
+                    if (on || ghost) {
+                        parts.push(`<rect x="${sx}" y="${sy}" width="${sq}" height="${sq}" class="${cls}" rx="0.5"/>`);
+                    }
+                    drawn++;
+                }
+            }
+        }
+
+        function appendOneBox(parts, x, boxTop, dlFilled, opt) {
+            const idx = opt.boxIdx;
+            const isHl = opt.highlightIndices && opt.highlightIndices.indexOf(idx) >= 0;
+            const isEmpty = dlFilled === 0;
+            let cls = 'box-path';
+            if (isEmpty && opt.emptyStyle) cls += ' empty';
+            if (isHl) cls += ' hl';
+            parts.push(`<path d="M ${x + 2} ${boxTop} v ${BOX_H} h ${BOX_W - 4} v ${-BOX_H}" class="${cls}"/>`);
+            if (opt.boxText) {
+                parts.push(`<text x="${x + BOX_W / 2}" y="${boxTop + BOX_H / 2 + 3}" text-anchor="middle" font-size="8" font-weight="900" fill="#0f766e">${opt.boxText}</text>`);
+            } else if (dlFilled > 0) {
+                appendDlSquares(parts, x, boxTop, dlFilled, false);
+            } else if (opt.showGhostSquares) {
+                appendDlSquares(parts, x, boxTop, 0, true);
+            }
+        }
+
+        function layoutRow(boxes, startX, forceFull) {
+            const slots = getDisplaySlots(boxes.length, forceFull);
+            const positions = [];
+            let x = startX;
+            slots.forEach((slot) => {
+                if (slot.type === 'ellipsis') {
+                    x += BOX_W * 0.3;
+                    positions.push({ kind: 'ellipsis', x: x + ELL_W / 2 });
+                    x += ELL_W + BOX_W * 0.2;
+                } else {
+                    positions.push({ kind: 'box', idx: slot.idx, x });
+                    x += BOX_W + BOX_GAP;
+                }
+            });
+            return { positions, endX: x - BOX_GAP, compact: boxes.length > 4 };
+        }
+
+        function appendCountArc(parts, x1, x2, boxTop, label) {
+            const midX = (x1 + x2) / 2;
+            const arcY = boxTop - 6;
+            const peakY = arcY - 14;
+            parts.push(`<path d="M ${x1} ${arcY} Q ${midX} ${peakY} ${x2} ${arcY}" class="count-path"/>`);
+            if (label) {
+                parts.push(`<text x="${midX}" y="${peakY - 5}" text-anchor="middle" font-size="9" font-weight="900" fill="#0f766e">${label}</text>`);
+            }
+            return peakY - 12;
+        }
+
+        /** 問5：箱数直線（0から）、箱の数＝日数、箱の中は dL の文字 */
+        function drawNumberLineDays(container, opt) {
+            const days = opt.days;
+            const dlText = opt.dlPerDay + 'dL';
+            const parts = [];
+            let minY = 6;
+            const baseY = BASE_Y;
+            const boxTop = baseY - BOX_FLOAT - BOX_H;
+            let x = START_X;
+
+            parts.push(`<line x1="${x - 4}" y1="${baseY}" x2="${x + days * (BOX_W + BOX_GAP) + 8}" y2="${baseY}" class="numline"/>`);
+            parts.push(`<line x1="${x}" y1="${baseY - 5}" x2="${x}" y2="${baseY + 5}" class="numline"/>`);
+            parts.push(`<text x="${x}" y="${baseY + 14}" text-anchor="middle" font-size="9" font-weight="bold">0</text>`);
+
+            let firstBoxX = null;
+            let lastBoxX = null;
+            for (let i = 0; i < days; i++) {
+                if (firstBoxX === null) firstBoxX = x;
+                lastBoxX = x + BOX_W;
+                appendOneBox(parts, x, boxTop, 0, { boxIdx: i, boxText: dlText });
+                x += BOX_W + BOX_GAP;
+            }
+
+            const rightTickX = x + 2;
+            parts.push(`<line x1="${rightTickX}" y1="${baseY - 5}" x2="${rightTickX}" y2="${baseY + 5}" class="numline"/>`);
+            parts.push(`<text x="${rightTickX}" y="${baseY + 14}" text-anchor="middle" font-size="9" font-weight="bold">${days}</text>`);
+
+            if (firstBoxX !== null) {
+                const top = appendCountArc(parts, firstBoxX, lastBoxX, boxTop, days + '日');
+                minY = Math.min(minY, top);
+            }
+
+            const width = Math.max(180, rightTickX + 20);
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', `0 ${minY - 4} ${width} ${baseY + 22 - minY}`);
+            svg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
+            svg.innerHTML = parts.join('');
+
+            const wrap = document.createElement('div');
+            wrap.className = 'diagram-wrap';
+            const scroll = document.createElement('div');
+            scroll.className = 'diagram-scroll';
+            scroll.appendChild(svg);
+            wrap.appendChild(scroll);
+            container.appendChild(wrap);
+        }
+
+        function drawBoxModel(container, diagram) {
+            const parts = [];
+            let minY = 10;
+            let maxY = BASE_Y + 20;
+            let cursorX = START_X;
+            let anyCompact = false;
+            let sumArcFirstX = null;
+            let sumArcLastX = null;
+            let sumArcBoxTop = null;
+            const joinChar = diagram.joinOp === 'minus' ? '−' : '＋';
+
+            (diagram.groups || [{ boxes: diagram.boxes, ...diagram }]).forEach((group, gi) => {
+                if (gi > 0) {
+                    const jx = cursorX + GROUP_GAP / 2 - 6;
+                    parts.push(`<text x="${jx}" y="${BASE_Y - 12}" text-anchor="middle" font-size="12" font-weight="900" fill="#64748b">${joinChar}</text>`);
+                    cursorX += GROUP_GAP;
+                }
+
+                const boxes = group.boxes;
+                const { positions, endX, compact } = layoutRow(boxes, cursorX, group.forceFull);
+                if (compact) anyCompact = true;
+                const boxTop = BASE_Y - BOX_H;
+                let firstX = null;
+                let lastX = null;
+
+                positions.forEach((item) => {
+                    if (item.kind === 'ellipsis') {
+                        parts.push(`<text x="${item.x}" y="${BASE_Y - 10}" text-anchor="middle" font-size="11" fill="#94a3b8">・・・</text>`);
+                    } else {
+                        const dl = boxes[item.idx];
+                        if (firstX === null) firstX = item.x;
+                        lastX = item.x + BOX_W;
+                        if (sumArcFirstX === null) sumArcFirstX = item.x;
+                        sumArcLastX = item.x + BOX_W;
+                        sumArcBoxTop = boxTop;
+                        const localIdx = group.indexOffset ? group.indexOffset + item.idx : item.idx;
+                        appendOneBox(parts, item.x, boxTop, dl, {
+                            boxIdx: localIdx,
+                            highlightIndices: group.highlightIndices,
+                            emptyStyle: group.emptyStyle,
+                            showGhostSquares: group.showGhostSquares
+                        });
+                    }
+                });
+
+                if (group.groupLabel && positions.length) {
+                    const gx = (positions[0].x + endX) / 2;
+                    const ly = boxTop - (group.countLabel ? 34 : 12);
+                    parts.push(`<text x="${gx}" y="${ly}" text-anchor="middle" class="group-label">${group.groupLabel}</text>`);
+                    minY = Math.min(minY, ly - 8);
+                }
+
+                if (group.countLabel) {
+                    let ax1 = firstX;
+                    let ax2 = lastX;
+                    if (group.arcFromIdx !== undefined && group.arcToIdx !== undefined) {
+                        positions.forEach((item) => {
+                            if (item.kind === 'box') {
+                                if (item.idx === group.arcFromIdx) ax1 = item.x;
+                                if (item.idx === group.arcToIdx) ax2 = item.x + BOX_W;
+                            }
+                        });
+                    }
+                    if (ax1 !== null && ax2 !== null) {
+                        const top = appendCountArc(parts, ax1, ax2, boxTop, group.countLabel);
+                        minY = Math.min(minY, top);
+                    }
+                }
+
+                cursorX = endX + (group.trailingGap || 0);
+            });
+
+            if (diagram.sumArcLabel && sumArcFirstX !== null && sumArcBoxTop !== null) {
+                const top = appendCountArc(parts, sumArcFirstX, sumArcLastX, sumArcBoxTop, diagram.sumArcLabel);
+                minY = Math.min(minY, top);
+            }
+
+            const width = Math.max(160, cursorX + 16);
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', `${0} ${minY - 6} ${width} ${maxY - minY + 20}`);
+            svg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
+            svg.innerHTML = parts.join('');
+
+            const wrap = document.createElement('div');
+            wrap.className = 'diagram-wrap';
+            const scroll = document.createElement('div');
+            scroll.className = 'diagram-scroll';
+            scroll.appendChild(svg);
+            wrap.appendChild(scroll);
+            if (anyCompact) {
+                const hint = document.createElement('p');
+                hint.className = 'swipe-hint';
+                hint.textContent = '・・・ のあいだにも同じ大きさの箱が続いています';
+                wrap.appendChild(hint);
+            }
+            container.appendChild(wrap);
+        }
+
+        function generateSet() {
+            const items = [];
+
+            const q1L = randInt(2, 6);
+            items.push({
+                num: 1,
+                title: '単位変換（L→dL）',
+                html: `<strong>${q1L}L</strong> は、デシリットルでいくつですか？`,
+                diagram: {
+                    boxes: literToFullBoxes(q1L),
+                    countLabel: q1L + 'L'
+                },
+                answers: [{
+                    label: 'dL',
+                    value: (q1L * 10) + 'dL',
+                    explain: `${q1L}L ＝ ${q1L} × 10 ＝ ${q1L * 10}dL（箱1つに正方形10個）`
+                }]
+            });
+
+            const q2dl = randInt(2, 6) * 10;
+            const q2L = q2dl / 10;
+            items.push({
+                num: 2,
+                title: '単位変換（dL→L）',
+                html: `<strong>${q2dl}dL</strong> は、リットルでいくつですか？`,
+                diagram: {
+                    boxes: literToFullBoxes(q2L),
+                    countLabel: '?L'
+                },
+                answers: [{
+                    label: 'L',
+                    value: q2L + 'L',
+                    explain: `${q2dl}dL ＝ ${q2dl} ÷ 10 ＝ ${q2L}L（箱が ${q2L}こ）`
+                }]
+            });
+
+            const q3a = randInt(1, 3) * 10;
+            const q3b = randInt(1, 3) * 10;
+            const q3sum = q3a + q3b;
+            items.push({
+                num: 3,
+                title: 'たし算（dLをまとめる）',
+                html: `ジュースを <strong>${q3a}dL</strong> と <strong>${q3b}dL</strong> 飲みました。合わせて何 dL ですか？　リットルでは何 L ですか？`,
+                diagram: {
+                    groups: [
+                        { boxes: dlToBoxes(q3a), groupLabel: q3a + 'dL' },
+                        { boxes: dlToBoxes(q3b), groupLabel: q3b + 'dL' }
+                    ]
+                },
+                answers: [
+                    { label: 'dL', value: q3sum + 'dL', explain: `${q3a} ＋ ${q3b} ＝ ${q3sum}dL` },
+                    { label: 'L', value: (q3sum / 10) + 'L', explain: `${q3sum}dL ＝ ${q3sum / 10}L` }
+                ]
+            });
+
+            const q4L = randInt(3, 6);
+            const drink = pick(['お茶', 'ミルク', '水', 'スープ']);
+            items.push({
+                num: 4,
+                title: '文章題（びんの容量）',
+                html: `${drink}が入ったびんに <strong>${q4L}L</strong> 入っています。この ${drink} は、全部で何 dL ですか？`,
+                diagram: {
+                    boxes: literToFullBoxes(q4L),
+                    countLabel: q4L + 'L'
+                },
+                answers: [{
+                    label: 'dL',
+                    value: (q4L * 10) + 'dL',
+                    explain: `${q4L}L ＝ ${q4L} × 10 ＝ ${q4L * 10}dL`
+                }]
+            });
+
+            const q5per = randInt(2, 4) * 10;
+            const q5days = randInt(2, 4);
+            const q5total = q5per * q5days;
+            items.push({
+                num: 5,
+                title: '文章題（毎日ちょっとずつ）',
+                html: `1日に <strong>${q5per}dL</strong> ずつ飲みます。<strong>${q5days}日間</strong> 続けると、全部で何 dL ですか？　リットルでは何 L ですか？`,
+                diagram: {
+                    mode: 'numberline_days',
+                    days: q5days,
+                    dlPerDay: q5per
+                },
+                answers: [
+                    { label: 'dL', value: q5total + 'dL', explain: `${q5per} × ${q5days} ＝ ${q5total}dL` },
+                    { label: 'L', value: (q5total / 10) + 'L', explain: `${q5total}dL ＝ ${q5total / 10}L` }
+                ]
+            });
+
+            const q6 = addMixedPair(true);
+            const q6drink = pick(['おちゃ', 'ジュース', 'ミルク']);
+            items.push({
+                num: 6,
+                title: 'たし算（くり上がりなし）',
+                html: `${q6drink}を <strong>${mixedLabel(q6.L1, q6.dl1)}</strong> と <strong>${mixedLabel(q6.L2, q6.dl2)}</strong> 飲みました。合わせて何 L 何 dL ですか？（○L△dL の形で答えなさい）`,
+                diagram: mixedAddDiagram(q6.L1, q6.dl1, q6.L2, q6.dl2),
+                answers: [{
+                    combined: true,
+                    value: mixedAnswer(q6.sum.L, q6.sum.dl),
+                    explain: `L：${q6.L1}＋${q6.L2}＝${q6.sum.L}L。dL：${q6.dl1}＋${q6.dl2}＝${q6.sum.dl}dL（くり上がりなし）→ ${mixedAnswerHtml(q6.sum.L, q6.sum.dl)}`
+                }]
+            });
+
+            const q7 = addMixedPair(false);
+            const q7drink = pick(['おちゃ', 'ジュース', 'ミルク', '水']);
+            items.push({
+                num: 7,
+                title: 'たし算（くり上がりあり）',
+                html: `${q7drink}を <strong>${mixedLabel(q7.L1, q7.dl1)}</strong> と <strong>${mixedLabel(q7.L2, q7.dl2)}</strong> 足しました。合わせて何 L 何 dL ですか？（○L△dL の形で答えなさい）`,
+                diagram: mixedAddDiagram(q7.L1, q7.dl1, q7.L2, q7.dl2),
+                answers: [{
+                    combined: true,
+                    value: mixedAnswer(q7.sum.L, q7.sum.dl),
+                    explain: explainAddCarry(q7.L1, q7.dl1, q7.L2, q7.dl2, q7.sum)
+                }]
+            });
+
+            const q8 = subMixedPair(false);
+            items.push({
+                num: 8,
+                title: 'ひき算（くり下がりなし）',
+                html: `桶に <strong>${mixedLabel(q8.L1, q8.dl1)}</strong> の水があります。<strong>${mixedLabel(q8.L2, q8.dl2)}</strong> 使いました。のこりは何 L 何 dL ですか？（○L△dL の形で答えなさい）`,
+                diagram: mixedSubDiagram(q8.L1, q8.dl1, q8.L2, q8.dl2),
+                answers: [{
+                    combined: true,
+                    value: mixedAnswer(q8.left.L, q8.left.dl),
+                    explain: `L：${q8.L1}−${q8.L2}＝${q8.left.L}L。dL：${q8.dl1}−${q8.dl2}＝${q8.left.dl}dL（くり下がりなし）→ ${mixedAnswerHtml(q8.left.L, q8.left.dl)}`
+                }]
+            });
+
+            const q9 = subMixedPair(true);
+            items.push({
+                num: 9,
+                title: 'ひき算（くり下がりあり）',
+                html: `桶に <strong>${mixedLabel(q9.L1, q9.dl1)}</strong> の水があります。<strong>${mixedLabel(q9.L2, q9.dl2)}</strong> 使いました。のこりは何 L 何 dL ですか？（○L△dL の形で答えなさい）`,
+                diagram: mixedSubDiagram(q9.L1, q9.dl1, q9.L2, q9.dl2),
+                answers: [{
+                    combined: true,
+                    value: mixedAnswer(q9.left.L, q9.left.dl),
+                    explain: explainSubBorrow(q9.L1, q9.dl1, q9.L2, q9.dl2, q9.left)
+                }]
+            });
+
+            return items;
+        }
+
+        function renderSet(items) {
+            const root = document.getElementById('problemsRoot');
+            root.innerHTML = '';
+            items.forEach((p) => {
+                const card = document.createElement('article');
+                card.className = 'problem';
+                card.innerHTML = `
+                    <div class="problem-header">
+                        <span class="problem-badge">問${p.num}</span>
+                        <p class="problem-title">${p.title}</p>
+                    </div>`;
+                const text = document.createElement('p');
+                text.className = 'problem-text';
+                text.innerHTML = p.html;
+                card.appendChild(text);
+                if (p.diagram) {
+                    const diagHost = document.createElement('div');
+                    if (p.diagram.mode === 'numberline_days') {
+                        drawNumberLineDays(diagHost, p.diagram);
+                    } else if (p.diagram.mode === 'dual_subtract') {
+                        drawDualSubtractDiagram(diagHost, p.diagram);
+                    } else {
+                        drawBoxModel(diagHost, p.diagram);
+                    }
+                    card.appendChild(diagHost);
+                }
+                p.answers.forEach((a, ai) => {
+                    const block = document.createElement('div');
+                    block.className = 'answer-block';
+                    let labelText = '答え';
+                    if (a.combined) {
+                        labelText = '答え（○L△dL の形）';
+                    } else if (p.answers.length > 1) {
+                        labelText = `答え（${a.label}）`;
+                    }
+                    const labelEl = document.createElement('label');
+                    labelEl.setAttribute('for', `ans-${p.num}-${ai}`);
+                    labelEl.textContent = labelText;
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = `ans-${p.num}-${ai}`;
+                    input.autocomplete = 'off';
+                    input.inputMode = 'text';
+                    if (a.combined) {
+                        input.placeholder = '例：3L5dL';
+                    }
+
+                    const ans = document.createElement('div');
+                    ans.className = 'parent-answer';
+                    ans.appendChild(document.createTextNode('正解：'));
+                    const valSpan = document.createElement('span');
+                    valSpan.className = 'answer-value';
+                    valSpan.textContent = a.value;
+                    ans.appendChild(valSpan);
+                    ans.appendChild(document.createTextNode('　／　'));
+                    const expSpan = document.createElement('span');
+                    expSpan.innerHTML = a.explain || '';
+                    ans.appendChild(expSpan);
+
+                    block.appendChild(labelEl);
+                    block.appendChild(input);
+                    block.appendChild(ans);
+                    card.appendChild(block);
+                });
+                root.appendChild(card);
+            });
+        }
+
+        function newSession() {
+            document.getElementById('sessionId').textContent =
+                'セット ID：' + Date.now().toString(36).slice(-6).toUpperCase();
+            renderSet(generateSet());
+            document.body.classList.remove('show-answers');
+            const btn = document.getElementById('btnAnswers');
+            btn.textContent = '👁 答え';
+            btn.classList.remove('showing');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        document.getElementById('btnNew').addEventListener('click', newSession);
+        document.getElementById('btnAnswers').addEventListener('click', () => {
+            document.body.classList.toggle('show-answers');
+            const btn = document.getElementById('btnAnswers');
+            const on = document.body.classList.contains('show-answers');
+            btn.textContent = on ? '答えを隠す' : '👁 答え';
+            btn.classList.toggle('showing', on);
+        });
+
+        newSession();
+    </script>
+</body>
+</html>
