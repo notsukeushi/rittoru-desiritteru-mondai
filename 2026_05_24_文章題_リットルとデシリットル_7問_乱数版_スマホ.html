@@ -25,12 +25,20 @@
         .top-bar h1 { font-size: 1rem; font-weight: 900; margin: 0 0 4px; }
         .session-id { font-size: 0.7rem; opacity: 0.9; margin: 0; }
         .content { padding: 12px; }
-        .hint-box {
-            background: #ccfbf1; border-radius: 12px; padding: 12px 14px;
-            font-size: 0.82rem; line-height: 1.6; margin-bottom: 14px; border: 1px solid #99f6e4;
+        .intro-box {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 14px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06); border: 2px solid #99f6e4;
         }
-        .hint-box summary { font-weight: 900; color: #0f766e; cursor: pointer; list-style: none; }
-        .hint-box summary::-webkit-details-marker { display: none; }
+        .intro-char {
+            width: 72px; height: 72px; object-fit: cover; border-radius: 50%;
+            background: #e6fffa; flex-shrink: 0; border: 2px solid #0d9488;
+        }
+        .intro-text { font-size: 0.88rem; line-height: 1.6; color: #334155; }
+        .intro-title { font-weight: 900; color: #0f766e; margin: 0 0 8px; font-size: 0.98rem; }
+        .intro-text ul { margin: 0; padding-left: 20px; }
+        .intro-text li { margin-bottom: 4px; }
+        .intro-text strong { color: #0d9488; }
         .problem {
             background: #fff; border-radius: 14px; padding: 16px 14px; margin-bottom: 14px;
             box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
@@ -112,15 +120,19 @@
     </header>
 
     <div class="content">
-        <details class="hint-box">
-            <summary>▶ 図の見方（タップで開く）</summary>
-            <div>
-                <strong>大きい箱 1つ ＝ 1L</strong>。箱の中の<strong>正方形 1つ ＝ 1dL</strong>（1箱に10個まで）。<br>
-                箱の数の上には、上に凸の<strong>実線の弧</strong>でまとめて示します。<br>
-                <strong>問5だけ</strong>箱数直線モデル（数直線・座標0から）で、箱の数＝日数、箱の中に dL の数値を書きます。
+        <div class="intro-box">
+            <img src="shizuku-sensei.png" alt="しずく先生" class="intro-char">
+            <div class="intro-text">
+                <p class="intro-title">こんにちは！ しずく先生です。</p>
+                <ul>
+                    <li><strong>1L ＝ 10dL</strong> だよ</li>
+                    <li>大きい<strong>箱 1つ ＝ 1L</strong></li>
+                    <li>箱の中の<strong>正方形 1つ ＝ 1dL</strong></li>
+                    <li>1つの箱には、正方形が<strong>10こ</strong>（5行×2列）入るよ！</li>
+                </ul>
             </div>
-        </details>
-        <p class="diagram-legend" style="margin-bottom:12px;">■ 箱＝1L　■ 箱の中の正方形＝1dL（5行×2列・10個で1L）</p>
+        </div>
+        <p class="diagram-legend" style="margin-bottom:12px;">■ 箱＝1L　■ 箱の中の正方形＝1dL（10個で1L）</p>
         <div id="problemsRoot"></div>
         <p class="footer-link"><a href="index.html">トップへ</a></p>
     </div>
