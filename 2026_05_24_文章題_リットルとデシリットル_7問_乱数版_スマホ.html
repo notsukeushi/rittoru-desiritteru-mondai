@@ -56,7 +56,8 @@
             border: 1px solid #e2e8f0;
         }
         .diagram-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 2px 0; }
-        .diagram-scroll svg { display: block; width: 100%; max-width: 100%; height: auto; max-height: 100px; }
+        .diagram-scroll svg { display: block; width: 100%; max-width: 100%; height: auto; max-height: 120px; }
+        .diagram-scroll.tall svg { max-height: 240px; }
         .diagram-legend { font-size: 0.72rem; color: #64748b; text-align: center; margin: 6px 0 0; }
         .diagram-caption {
             font-size: 0.78rem; font-weight: 900; color: #475569;
@@ -156,7 +157,7 @@
         const BOX_H = 30;
         const BOX_GAP = 5;
         const GROUP_GAP = 24;
-        const START_X = 26;
+        const START_X = 36;
         const BASE_Y = 56;
         const ELL_W = 20;
         const BOX_FLOAT = 6;
@@ -352,7 +353,7 @@
             const wrap = document.createElement('div');
             wrap.className = 'diagram-wrap';
             const scroll = document.createElement('div');
-            scroll.className = 'diagram-scroll';
+            scroll.className = 'diagram-scroll tall';
             scroll.appendChild(svg);
             wrap.appendChild(scroll);
             container.appendChild(wrap);
@@ -675,7 +676,7 @@
                 answers: [{
                     label: 'dL',
                     value: (q1L * 10) + 'dL',
-                    explain: `${q1L}L ＝ ${q1L} × 10 ＝ ${q1L * 10}dL（箱1つに正方形10個）`
+                    explain: `${q1L}L ＝ 10 × ${q1L} ＝ ${q1L * 10}dL（箱1つに正方形10個）`
                 }]
             });
 
@@ -734,7 +735,7 @@
                 answers: [{
                     label: 'dL',
                     value: (q4L * 10) + 'dL',
-                    explain: `${q4L}L ＝ ${q4L} × 10 ＝ ${q4L * 10}dL`
+                    explain: `${q4L}L ＝ 10 × ${q4L} ＝ ${q4L * 10}dL`
                 }]
             });
 
