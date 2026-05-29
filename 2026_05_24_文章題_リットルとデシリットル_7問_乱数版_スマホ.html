@@ -129,10 +129,11 @@
                     <li>大きい<strong>箱 1つ ＝ 1L</strong></li>
                     <li>箱の中の<strong>正方形 1つ ＝ 1dL</strong></li>
                     <li>1つの箱には、正方形が<strong>10こ</strong>（5行×2列）入るよ！</li>
+                    <li>箱の左の<strong>上向き矢印</strong>は「1つあたりの量」だよ。</li>
                 </ul>
             </div>
         </div>
-        <p class="diagram-legend" style="margin-bottom:12px;">■ 箱＝1L　■ 箱の中の正方形＝1dL（10個で1L）</p>
+        <p class="diagram-legend" style="margin-bottom:12px;">■ 箱＝1L　■ 箱の中の正方形＝1dL（10個で1L）<br>↑ ＝ 1箱分の量（1つあたりの量）</p>
         <div id="problemsRoot"></div>
         <p class="footer-link"><a href="index.html">トップへ</a></p>
     </div>
@@ -154,8 +155,8 @@
         const BOX_W = 28;
         const BOX_H = 30;
         const BOX_GAP = 5;
-        const GROUP_GAP = 18;
-        const START_X = 10;
+        const GROUP_GAP = 24;
+        const START_X = 26;
         const BASE_Y = 56;
         const ELL_W = 20;
         const BOX_FLOAT = 6;
@@ -367,19 +368,46 @@
             } else if (opt.showGhostSquares) {
                 appendDlSquares(parts, x, boxTop, 0, true);
             }
+
+            if (opt.needsArrow) {
+                let amountStr = '';
+                let ratio = 1;
+                if (opt.boxText) {
+                    amountStr = opt.boxText;
+                } else if (dlFilled > 0) {
+                    amountStr = dlFilled + 'dL';
+                    ratio = dlFilled / 10;
+                }
+                if (ratio > 0) {
+                    const arrX = x - 4;
+                    const bottomY = boxTop + BOX_H;
+                    const topY = bottomY - Math.max(6, BOX_H * ratio);
+                    const color = '#d97706';
+                    parts.push(`<line x1="${arrX}" y1="${bottomY}" x2="${arrX}" y2="${topY}" stroke="${color}" stroke-width="1.5"/>`);
+                    parts.push(`<path d="M ${arrX - 3} ${topY + 4} L ${arrX} ${topY} L ${arrX + 3} ${topY + 4}" fill="none" stroke="${color}" stroke-width="1.5"/>`);
+                    if (amountStr) {
+                        parts.push(`<text x="${arrX - 3}" y="${(bottomY + topY) / 2 + 3}" text-anchor="end" font-size="9" font-weight="bold" fill="${color}">${amountStr}</text>`);
+                    }
+                }
+            }
         }
 
         function layoutRow(boxes, startX, forceFull) {
             const slots = getDisplaySlots(boxes.length, forceFull);
             const positions = [];
             let x = startX;
-            slots.forEach((slot) => {
+            slots.forEach((slot, i) => {
                 if (slot.type === 'ellipsis') {
                     x += BOX_W * 0.3;
                     positions.push({ kind: 'ellipsis', x: x + ELL_W / 2 });
                     x += ELL_W + BOX_W * 0.2;
                 } else {
-                    positions.push({ kind: 'box', idx: slot.idx, x });
+                    const dlFilled = boxes[slot.idx];
+                    const needsArrow = slot.idx === 0 || (dlFilled > 0 && dlFilled < 10);
+                    if (needsArrow && i > 0) {
+                        x += 16;
+                    }
+                    positions.push({ kind: 'box', idx: slot.idx, x, needsArrow });
                     x += BOX_W + BOX_GAP;
                 }
             });
@@ -416,11 +444,12 @@
             for (let i = 0; i < days; i++) {
                 if (firstBoxX === null) firstBoxX = x;
                 lastBoxX = x + BOX_W;
-                appendOneBox(parts, x, boxTop, 0, { boxIdx: i, boxText: dlText });
+                const needsArrow = (i === 0);
+                appendOneBox(parts, x, boxTop, 0, { boxIdx: i, boxText: dlText, needsArrow });
                 x += BOX_W + BOX_GAP;
             }
 
-            const rightTickX = x + 2;
+            const rightTickX = lastBoxX;
             parts.push(`<line x1="${rightTickX}" y1="${baseY - 5}" x2="${rightTickX}" y2="${baseY + 5}" class="numline"/>`);
             parts.push(`<text x="${rightTickX}" y="${baseY + 14}" text-anchor="middle" font-size="9" font-weight="bold">${days}</text>`);
 
@@ -484,7 +513,8 @@
                             boxIdx: localIdx,
                             highlightIndices: group.highlightIndices,
                             emptyStyle: group.emptyStyle,
-                            showGhostSquares: group.showGhostSquares
+                            showGhostSquares: group.showGhostSquares,
+                            needsArrow: item.needsArrow
                         });
                     }
                 });
