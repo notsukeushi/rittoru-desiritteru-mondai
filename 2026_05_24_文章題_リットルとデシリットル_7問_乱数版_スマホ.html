@@ -430,14 +430,14 @@
             const days = opt.days;
             const dlText = opt.dlPerDay + 'dL';
             const parts = [];
-            let minY = 6;
+            let minY = -10;
             const baseY = BASE_Y;
             const boxTop = baseY - BOX_FLOAT - BOX_H;
             let x = START_X;
 
             parts.push(`<line x1="${x - 4}" y1="${baseY}" x2="${x + days * (BOX_W + BOX_GAP) + 8}" y2="${baseY}" class="numline"/>`);
             parts.push(`<line x1="${x}" y1="${baseY - 5}" x2="${x}" y2="${baseY + 5}" class="numline"/>`);
-            parts.push(`<text x="${x}" y="${baseY + 14}" text-anchor="middle" font-size="9" font-weight="bold">0</text>`);
+            parts.push(`<text x="${x}" y="${baseY + 16}" text-anchor="middle" font-size="10" font-weight="bold">0</text>`);
 
             let firstBoxX = null;
             let lastBoxX = null;
@@ -451,16 +451,28 @@
 
             const rightTickX = lastBoxX;
             parts.push(`<line x1="${rightTickX}" y1="${baseY - 5}" x2="${rightTickX}" y2="${baseY + 5}" class="numline"/>`);
-            parts.push(`<text x="${rightTickX}" y="${baseY + 14}" text-anchor="middle" font-size="9" font-weight="bold">${days}</text>`);
+            parts.push(`<text x="${rightTickX}" y="${baseY + 16}" text-anchor="middle" font-size="10" font-weight="bold">${days}</text>`);
 
-            if (firstBoxX !== null) {
-                const top = appendCountArc(parts, firstBoxX, lastBoxX, boxTop, days + '日');
-                minY = Math.min(minY, top);
-            }
+            // 1日を示す下向きの弧（最初の箱の下）
+            const bMidX = (firstBoxX + (firstBoxX + BOX_W)) / 2;
+            const bArcY = baseY + 24;
+            const bPeakY = bArcY + 14;
+            parts.push(`<path d="M ${firstBoxX} ${bArcY} Q ${bMidX} ${bPeakY} ${firstBoxX + BOX_W} ${bArcY}" class="count-path" stroke-dasharray="3"/>`);
+            parts.push(`<text x="${bMidX}" y="${bPeakY + 14}" text-anchor="middle" font-size="10" font-weight="900" fill="#0f766e">1日</text>`);
 
-            const width = Math.max(180, rightTickX + 20);
+            // 全部の量を表す右端の大きな箱
+            const totalBoxX = rightTickX + 24;
+            const totalBoxY = boxTop - 12;
+            const totalBoxW = 54;
+            const totalBoxH = 50;
+            parts.push(`<rect x="${totalBoxX}" y="${totalBoxY}" width="${totalBoxW}" height="${totalBoxH}" fill="#f8fafc" stroke="#0d9488" stroke-width="2.5" rx="4"/>`);
+            parts.push(`<text x="${totalBoxX + totalBoxW / 2}" y="${totalBoxY + 18}" text-anchor="middle" font-size="10" font-weight="900" fill="#64748b">全部の量</text>`);
+            parts.push(`<text x="${totalBoxX + totalBoxW / 2}" y="${totalBoxY + 38}" text-anchor="middle" font-size="14" font-weight="900" fill="#d97706">?</text>`);
+
+            const width = Math.max(180, totalBoxX + totalBoxW + 10);
+            const svgHeight = bPeakY + 18 - (minY - 4);
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('viewBox', `0 ${minY - 4} ${width} ${baseY + 22 - minY}`);
+            svg.setAttribute('viewBox', `0 ${minY - 4} ${width} ${svgHeight}`);
             svg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
             svg.innerHTML = parts.join('');
 
@@ -657,7 +669,7 @@
                     dlPerDay: q5per
                 },
                 answers: [
-                    { label: 'dL', value: q5total + 'dL', explain: `${q5per} × ${q5days} ＝ ${q5total}dL` },
+                    { label: 'dL', value: q5total + 'dL', explain: `「1つ分の量」×「いくつ分」＝「全部の量」<br>${q5per}dL × ${q5days}日 ＝ ${q5total}dL` },
                     { label: 'L', value: (q5total / 10) + 'L', explain: `${q5total}dL ＝ ${q5total / 10}L` }
                 ]
             });
