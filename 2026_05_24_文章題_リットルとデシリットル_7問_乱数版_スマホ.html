@@ -56,8 +56,8 @@
             border: 1px solid #e2e8f0;
         }
         .diagram-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 2px 0; }
-        .diagram-scroll svg { display: block; width: 100%; max-width: 100%; height: auto; max-height: 120px; }
-        .diagram-scroll.tall svg { max-height: 240px; }
+        .diagram-scroll svg { display: block; height: 140px; width: auto; max-width: none; }
+        .diagram-scroll.tall svg { height: 260px; }
         .diagram-legend { font-size: 0.72rem; color: #64748b; text-align: center; margin: 6px 0 0; }
         .diagram-caption {
             font-size: 0.78rem; font-weight: 900; color: #475569;
@@ -310,7 +310,12 @@
                     x += BOX_W + BOX_GAP;
                 }
                 if (dl > 0) {
-                    appendOneBox(parts, dlStartX, boxTop, dl, { boxIdx: L, needsArrow: true });
+                    let dlX = dlStartX;
+                    const dlBoxes = dlToBoxes(dl);
+                    dlBoxes.forEach((dVal, idx) => {
+                        appendOneBox(parts, dlX, boxTop, dVal, { boxIdx: L + idx, needsArrow: (idx === 0) });
+                        dlX += BOX_W + BOX_GAP;
+                    });
                 }
                 
                 if (L > 0) {
@@ -322,12 +327,14 @@
             
             drawRow(opt.cap1, opt.L1, opt.dl1);
             
-            const sign = opt.mode === 'add' ? '＋' : '−';
+            const sign = opt.type === 'add' ? '＋' : '−';
             parts.push(`<text x="${START_X - 10}" y="${currentY - 20}" font-size="16" font-weight="900" fill="#64748b">${sign}</text>`);
             
             drawRow(opt.cap2, opt.L2, opt.dl2);
             
-            parts.push(`<line x1="${START_X - 14}" y1="${currentY - 28}" x2="${dlStartX + BOX_W + 16}" y2="${currentY - 28}" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"/>`);
+            const maxDl = Math.max(dlToBoxes(opt.dl1).length, dlToBoxes(opt.dl2).length);
+            const lineEndX = dlStartX + maxDl * (BOX_W + BOX_GAP);
+            parts.push(`<line x1="${START_X - 14}" y1="${currentY - 28}" x2="${lineEndX + 6}" y2="${currentY - 28}" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"/>`);
             
             const ansY = currentY;
             const bigW = 46;
@@ -339,7 +346,8 @@
             
             appendLargeTotalBox(parts, lAnsX, ansY, bigW, bigH, opt.labelL, '?');
             
-            const dlAnsX = dlStartX + BOX_W / 2 - bigW / 2;
+            const dlCenter = dlStartX + (maxDl * (BOX_W + BOX_GAP) - BOX_GAP) / 2;
+            const dlAnsX = dlCenter - bigW / 2;
             appendLargeTotalBox(parts, dlAnsX, ansY, bigW, bigH, opt.labelDl, '?');
             
             currentY += bigH + 16;
@@ -460,11 +468,12 @@
             return { positions, endX: x - BOX_GAP, compact: boxes.length > 4 };
         }
 
-        function appendCountArc(parts, x1, x2, boxTop, label) {
+        function appendCountArc(parts, x1, x2, boxTop, label, dashed) {
             const midX = (x1 + x2) / 2;
             const arcY = boxTop - 6;
             const peakY = arcY - 14;
-            parts.push(`<path d="M ${x1} ${arcY} Q ${midX} ${peakY} ${x2} ${arcY}" class="count-path"/>`);
+            const dashAttr = dashed ? ' stroke-dasharray="3"' : '';
+            parts.push(`<path d="M ${x1} ${arcY} Q ${midX} ${peakY} ${x2} ${arcY}" class="count-path"${dashAttr}/>`);
             if (label) {
                 parts.push(`<text x="${midX}" y="${peakY - 5}" text-anchor="middle" font-size="9" font-weight="900" fill="#0f766e">${label}</text>`);
             }
@@ -613,7 +622,7 @@
                         });
                     }
                     if (ax1 !== null && ax2 !== null) {
-                        const top = appendCountArc(parts, ax1, ax2, boxTop, group.countLabel);
+                        const top = appendCountArc(parts, ax1, ax2, boxTop, group.countLabel, group.countArcDashed);
                         minY = Math.min(minY, top);
                     }
                 }
@@ -624,7 +633,7 @@
             let maxYValue = maxY;
 
             if (diagram.sumArcLabel && sumArcFirstX !== null && sumArcBoxTop !== null) {
-                const top = appendCountArc(parts, sumArcFirstX, sumArcLastX, sumArcBoxTop, diagram.sumArcLabel);
+                const top = appendCountArc(parts, sumArcFirstX, sumArcLastX, sumArcBoxTop, diagram.sumArcLabel, diagram.sumArcDashed);
                 minY = Math.min(minY, top);
             }
 
@@ -670,6 +679,7 @@
                 diagram: {
                     boxes: literToFullBoxes(q1L),
                     countLabel: q1L + 'L',
+                    countArcDashed: true,
                     firstBoxBottomArc: '1L',
                     totalBox: { label: '全部の量', value: '?' }
                 },
@@ -689,8 +699,9 @@
                 diagram: {
                     boxes: literToFullBoxes(q2L),
                     countLabel: '?L',
+                    countArcDashed: true,
                     firstBoxBottomArc: '1L',
-                    totalBox: { label: '全部の量', value: '?' }
+                    totalBox: { label: '全部の量', value: q2dl + 'dL' }
                 },
                 answers: [{
                     label: 'L',
@@ -707,12 +718,13 @@
                 title: 'たし算（dLをまとめる）',
                 html: `ジュースを <strong>${q3a}dL</strong> と <strong>${q3b}dL</strong> 飲みました。合わせて何 dL ですか？　リットルでは何 L ですか？`,
                 diagram: {
-                    groups: [
-                        { boxes: dlToBoxes(q3a), groupLabel: q3a + 'dL' },
-                        { boxes: dlToBoxes(q3b), groupLabel: q3b + 'dL' }
-                    ],
-                    firstBoxBottomArc: '1L',
-                    totalBox: { label: '全部の量', value: '?' }
+                    mode: 'vertical_mixed',
+                    type: 'add',
+                    L1: 0, dl1: q3a, L2: 0, dl2: q3b,
+                    cap1: '1つめの量',
+                    cap2: '2つめの量',
+                    labelL: 'Lの合計',
+                    labelDl: 'dLの合計'
                 },
                 answers: [
                     { label: 'dL', value: q3sum + 'dL', explain: `${q3a} ＋ ${q3b} ＝ ${q3sum}dL` },
@@ -729,6 +741,7 @@
                 diagram: {
                     boxes: literToFullBoxes(q4L),
                     countLabel: q4L + 'L',
+                    countArcDashed: true,
                     firstBoxBottomArc: '1L',
                     totalBox: { label: '全部の量', value: '?' }
                 },
@@ -859,7 +872,7 @@
                     input.autocomplete = 'off';
                     input.inputMode = 'text';
                     if (a.combined) {
-                        input.placeholder = '例：3L5dL';
+                        // placeholder is removed as per user request
                     }
 
                     const ans = document.createElement('div');
