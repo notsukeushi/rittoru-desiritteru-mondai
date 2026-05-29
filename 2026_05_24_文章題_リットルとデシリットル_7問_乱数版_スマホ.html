@@ -238,18 +238,25 @@
 
         function mixedAddDiagram(L1, dl1, L2, dl2) {
             return {
-                groups: [
-                    { boxes: mixedToBoxes(L1, dl1), groupLabel: mixedLabel(L1, dl1) },
-                    { boxes: mixedToBoxes(L2, dl2), groupLabel: mixedLabel(L2, dl2) }
-                ],
-                sumArcLabel: '?L?dL'
+                mode: 'vertical_mixed',
+                type: 'add',
+                L1, dl1, L2, dl2,
+                cap1: '1つめの量',
+                cap2: '2つめの量',
+                labelL: 'Lの合計',
+                labelDl: 'dLの合計'
             };
         }
 
         function mixedSubDiagram(L1, dl1, L2, dl2) {
             return {
-                mode: 'dual_subtract',
-                L1, dl1, L2, dl2
+                mode: 'vertical_mixed',
+                type: 'sub',
+                L1, dl1, L2, dl2,
+                cap1: 'はじめの量',
+                cap2: '使った分',
+                labelL: 'Lののこり',
+                labelDl: 'dLののこり'
             };
         }
 
@@ -284,33 +291,71 @@
             return randInt(1, 9);
         }
 
-        function drawDualSubtractDiagram(container, opt) {
-            const cap1 = document.createElement('p');
-            cap1.className = 'diagram-caption';
-            cap1.textContent = 'はじめの量';
-            container.appendChild(cap1);
-            drawBoxModel(container, {
-                groups: [{
-                    boxes: mixedToBoxes(opt.L1, opt.dl1),
-                    groupLabel: mixedLabel(opt.L1, opt.dl1)
-                }]
-            });
+        function drawVerticalMixedDiagram(container, opt) {
+            const parts = [];
+            const maxL = Math.max(opt.L1, opt.L2);
+            const dlStartX = START_X + maxL * (BOX_W + BOX_GAP) + 20;
+            
+            let currentY = 16;
+            
+            function drawRow(cap, L, dl) {
+                parts.push(`<text x="${START_X}" y="${currentY}" font-size="11" font-weight="900" fill="#475569">${cap}</text>`);
+                currentY += 16;
+                const boxTop = currentY;
+                let x = START_X;
+                for (let i = 0; i < L; i++) {
+                    const needsArrow = (i === 0);
+                    appendOneBox(parts, x, boxTop, 10, { boxIdx: i, needsArrow });
+                    x += BOX_W + BOX_GAP;
+                }
+                if (dl > 0) {
+                    appendOneBox(parts, dlStartX, boxTop, dl, { boxIdx: L, needsArrow: true });
+                }
+                
+                if (L > 0) {
+                    appendBottomArc(parts, START_X, START_X + BOX_W, boxTop + BOX_H - 6, '1L');
+                }
+                
+                currentY += BOX_H + 38;
+            }
+            
+            drawRow(opt.cap1, opt.L1, opt.dl1);
+            
+            const sign = opt.mode === 'add' ? '＋' : '−';
+            parts.push(`<text x="${START_X - 10}" y="${currentY - 20}" font-size="16" font-weight="900" fill="#64748b">${sign}</text>`);
+            
+            drawRow(opt.cap2, opt.L2, opt.dl2);
+            
+            parts.push(`<line x1="${START_X - 14}" y1="${currentY - 28}" x2="${dlStartX + BOX_W + 16}" y2="${currentY - 28}" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"/>`);
+            
+            const ansY = currentY;
+            const bigW = 46;
+            const bigH = 46;
+            
+            let lCenter = START_X + (maxL * (BOX_W + BOX_GAP) - BOX_GAP) / 2;
+            if (maxL === 0) lCenter = START_X + bigW / 2;
+            const lAnsX = Math.max(START_X, lCenter - bigW / 2);
+            
+            appendLargeTotalBox(parts, lAnsX, ansY, bigW, bigH, opt.labelL, '?');
+            
+            const dlAnsX = dlStartX + BOX_W / 2 - bigW / 2;
+            appendLargeTotalBox(parts, dlAnsX, ansY, bigW, bigH, opt.labelDl, '?');
+            
+            currentY += bigH + 16;
+            
+            const width = Math.max(220, dlAnsX + bigW + 20);
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', `0 0 ${width} ${currentY}`);
+            svg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
+            svg.innerHTML = parts.join('');
 
-            const cap2 = document.createElement('p');
-            cap2.className = 'diagram-caption';
-            cap2.textContent = '使った分';
-            container.appendChild(cap2);
-            drawBoxModel(container, {
-                groups: [{
-                    boxes: mixedToBoxes(opt.L2, opt.dl2),
-                    groupLabel: mixedLabel(opt.L2, opt.dl2)
-                }]
-            });
-
-            const hint = document.createElement('p');
-            hint.className = 'diagram-result-hint';
-            hint.textContent = 'のこり：?L?dL';
-            container.appendChild(hint);
+            const wrap = document.createElement('div');
+            wrap.className = 'diagram-wrap';
+            const scroll = document.createElement('div');
+            scroll.className = 'diagram-scroll';
+            scroll.appendChild(svg);
+            wrap.appendChild(scroll);
+            container.appendChild(wrap);
         }
 
         function getDisplaySlots(n, forceFull) {
@@ -426,6 +471,24 @@
         }
 
         /** 問5：箱数直線（0から）、箱の数＝日数、箱の中は dL の文字 */
+        function appendBottomArc(parts, x1, x2, boxBottom, label) {
+            const midX = (x1 + x2) / 2;
+            const bArcY = boxBottom + 10;
+            const bPeakY = bArcY + 14;
+            parts.push(`<path d="M ${x1} ${bArcY} Q ${midX} ${bPeakY} ${x2} ${bArcY}" class="count-path" stroke-dasharray="3"/>`);
+            if (label) {
+                parts.push(`<text x="${midX}" y="${bPeakY + 14}" text-anchor="middle" font-size="10" font-weight="900" fill="#0f766e">${label}</text>`);
+            }
+            return bPeakY + 18;
+        }
+
+        function appendLargeTotalBox(parts, x, y, w, h, labelTop, labelInside) {
+            parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#f8fafc" stroke="#0d9488" stroke-width="2.5" rx="4"/>`);
+            parts.push(`<text x="${x + w / 2}" y="${y + 16}" text-anchor="middle" font-size="9" font-weight="900" fill="#64748b">${labelTop}</text>`);
+            parts.push(`<text x="${x + w / 2}" y="${y + 36}" text-anchor="middle" font-size="14" font-weight="900" fill="#d97706">${labelInside}</text>`);
+            return x + w;
+        }
+
         function drawNumberLineDays(container, opt) {
             const days = opt.days;
             const dlText = opt.dlPerDay + 'dL';
@@ -454,23 +517,22 @@
             parts.push(`<text x="${rightTickX}" y="${baseY + 16}" text-anchor="middle" font-size="10" font-weight="bold">${days}</text>`);
 
             // 1日を示す下向きの弧（最初の箱の下）
-            const bMidX = (firstBoxX + (firstBoxX + BOX_W)) / 2;
-            const bArcY = baseY + 24;
-            const bPeakY = bArcY + 14;
-            parts.push(`<path d="M ${firstBoxX} ${bArcY} Q ${bMidX} ${bPeakY} ${firstBoxX + BOX_W} ${bArcY}" class="count-path" stroke-dasharray="3"/>`);
-            parts.push(`<text x="${bMidX}" y="${bPeakY + 14}" text-anchor="middle" font-size="10" font-weight="900" fill="#0f766e">1日</text>`);
+            const bottomMaxY = appendBottomArc(parts, firstBoxX, firstBoxX + BOX_W, baseY + 6, '1日');
+
+            if (firstBoxX !== null) {
+                const top = appendCountArc(parts, firstBoxX, lastBoxX, boxTop, days + '日');
+                minY = Math.min(minY, top);
+            }
 
             // 全部の量を表す右端の大きな箱
             const totalBoxX = rightTickX + 24;
             const totalBoxY = boxTop - 12;
-            const totalBoxW = 54;
-            const totalBoxH = 50;
-            parts.push(`<rect x="${totalBoxX}" y="${totalBoxY}" width="${totalBoxW}" height="${totalBoxH}" fill="#f8fafc" stroke="#0d9488" stroke-width="2.5" rx="4"/>`);
-            parts.push(`<text x="${totalBoxX + totalBoxW / 2}" y="${totalBoxY + 18}" text-anchor="middle" font-size="10" font-weight="900" fill="#64748b">全部の量</text>`);
-            parts.push(`<text x="${totalBoxX + totalBoxW / 2}" y="${totalBoxY + 38}" text-anchor="middle" font-size="14" font-weight="900" fill="#d97706">?</text>`);
+            const totalBoxW = 46;
+            const totalBoxH = 46;
+            appendLargeTotalBox(parts, totalBoxX, totalBoxY, totalBoxW, totalBoxH, '全部の量', '?');
 
             const width = Math.max(180, totalBoxX + totalBoxW + 10);
-            const svgHeight = bPeakY + 18 - (minY - 4);
+            const svgHeight = bottomMaxY - (minY - 4);
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('viewBox', `0 ${minY - 4} ${width} ${svgHeight}`);
             svg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
@@ -558,14 +620,26 @@
                 cursorX = endX + (group.trailingGap || 0);
             });
 
+            let maxYValue = maxY;
+
             if (diagram.sumArcLabel && sumArcFirstX !== null && sumArcBoxTop !== null) {
                 const top = appendCountArc(parts, sumArcFirstX, sumArcLastX, sumArcBoxTop, diagram.sumArcLabel);
                 minY = Math.min(minY, top);
             }
 
+            if (diagram.firstBoxBottomArc && sumArcFirstX !== null) {
+                const bY = appendBottomArc(parts, sumArcFirstX, sumArcFirstX + BOX_W, BASE_Y, diagram.firstBoxBottomArc);
+                maxYValue = Math.max(maxYValue, bY);
+            }
+
+            if (diagram.totalBox) {
+                cursorX += 20;
+                cursorX = appendLargeTotalBox(parts, cursorX, BASE_Y - BOX_H - 12, 46, 46, diagram.totalBox.label, diagram.totalBox.value);
+            }
+
             const width = Math.max(160, cursorX + 16);
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('viewBox', `${0} ${minY - 6} ${width} ${maxY - minY + 20}`);
+            svg.setAttribute('viewBox', `${0} ${minY - 6} ${width} ${maxYValue - minY + 10}`);
             svg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
             svg.innerHTML = parts.join('');
 
@@ -594,7 +668,9 @@
                 html: `<strong>${q1L}L</strong> は、デシリットルでいくつですか？`,
                 diagram: {
                     boxes: literToFullBoxes(q1L),
-                    countLabel: q1L + 'L'
+                    countLabel: q1L + 'L',
+                    firstBoxBottomArc: '1L',
+                    totalBox: { label: '全部の量', value: '?' }
                 },
                 answers: [{
                     label: 'dL',
@@ -611,7 +687,9 @@
                 html: `<strong>${q2dl}dL</strong> は、リットルでいくつですか？`,
                 diagram: {
                     boxes: literToFullBoxes(q2L),
-                    countLabel: '?L'
+                    countLabel: '?L',
+                    firstBoxBottomArc: '1L',
+                    totalBox: { label: '全部の量', value: '?' }
                 },
                 answers: [{
                     label: 'L',
@@ -631,7 +709,9 @@
                     groups: [
                         { boxes: dlToBoxes(q3a), groupLabel: q3a + 'dL' },
                         { boxes: dlToBoxes(q3b), groupLabel: q3b + 'dL' }
-                    ]
+                    ],
+                    firstBoxBottomArc: '1L',
+                    totalBox: { label: '全部の量', value: '?' }
                 },
                 answers: [
                     { label: 'dL', value: q3sum + 'dL', explain: `${q3a} ＋ ${q3b} ＝ ${q3sum}dL` },
@@ -647,7 +727,9 @@
                 html: `${drink}が入ったびんに <strong>${q4L}L</strong> 入っています。この ${drink} は、全部で何 dL ですか？`,
                 diagram: {
                     boxes: literToFullBoxes(q4L),
-                    countLabel: q4L + 'L'
+                    countLabel: q4L + 'L',
+                    firstBoxBottomArc: '1L',
+                    totalBox: { label: '全部の量', value: '?' }
                 },
                 answers: [{
                     label: 'dL',
@@ -750,8 +832,8 @@
                     const diagHost = document.createElement('div');
                     if (p.diagram.mode === 'numberline_days') {
                         drawNumberLineDays(diagHost, p.diagram);
-                    } else if (p.diagram.mode === 'dual_subtract') {
-                        drawDualSubtractDiagram(diagHost, p.diagram);
+                    } else if (p.diagram.mode === 'vertical_mixed') {
+                        drawVerticalMixedDiagram(diagHost, p.diagram);
                     } else {
                         drawBoxModel(diagHost, p.diagram);
                     }
